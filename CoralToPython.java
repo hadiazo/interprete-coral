@@ -1,5 +1,7 @@
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.antlr.v4.tool.Rule;
 
 public class CoralToPython extends CoralBaseListener {
     static String traduccion ="";
@@ -18,7 +20,8 @@ public class CoralToPython extends CoralBaseListener {
         if(ctx.FUNCTION()!=null){
             String nombre_funcion = ctx.ID().getText();
             traduccion = traduccion + "def" +" "+ nombre_funcion + "(";
-            //System.out.printf("def" +" "+ nombre_funcion + "(" + ctx.); //ctx.FUNCTION())==Function  ctx.ID()==nombre de la funcion
+            //System.out.printf("def" +" "+ nombre_funcion + "(" + ctx.);
+            // ctx.FUNCTION())==Function  ctx.ID()==nombre de la funcion
             //System.out.printf(traduccion);
         }
 
@@ -50,7 +53,7 @@ public class CoralToPython extends CoralBaseListener {
     }
 
     @Override public void exitDeclaracion(CoralParser.DeclaracionContext ctx) {
-        System.out.printf(traduccion);
+        //System.out.printf(traduccion);
     }
 
     @Override
@@ -72,9 +75,9 @@ public class CoralToPython extends CoralBaseListener {
 
     @Override public void enterOperacion(CoralParser.OperacionContext ctx) {
         if(ctx.ID()!=null){
-            String variable = ctx.ID().toString();
-            String value = (ctx.NUMERO().toString());
-            String operador= ctx.OPERADOR().getText();
+            //String variable = ctx.ID().toString();
+            //String value = (ctx.NUMERO().toString());
+            //String operador= ctx.OPERADOR().getText();
             //traduccion += ctx.getText();
             //traduccion += operador;
             //traduccion += value;
@@ -95,17 +98,25 @@ public class CoralToPython extends CoralBaseListener {
             String variable = ctx.ID().getText();
             String variable2 = ctx.NUMERO().getText();
             //System.out.printf(variable,"\n");
-            traduccion = traduccion + variable + '=' + variable2;
+            traduccion = traduccion + variable + " " + '=' + variable2;
             //System.out.printf(tipo_var);
             //System.out.print(ctx.FUNCTION());
         }
-        if(ctx.operacion()!=null){
+        if(ctx.operacion()!=null && ctx.array_elemento()==null){
             String variable = ctx.ID().getText();
             String operacion = ctx.operacion().getText();
-            //System.out.printf(variable,"\n");
             traduccion = traduccion + variable + '=' + operacion;
-            //System.out.printf(tipo_var);
-            //System.out.print(ctx.FUNCTION());
+        }
+        if(ctx.arrayE()!=null){
+            String variable = ctx.ID().getText();
+            String arraye = ctx.arrayE().getText();
+            traduccion = traduccion + variable + '=' + arraye  ;
+        }
+        if(ctx.array_elemento()!=null ){
+            String array_nom = ctx.ID().getText();
+            String array_elem = ctx.array_elemento().getText();
+            String operacion = ctx.operacion().getText();
+            traduccion = traduccion + array_nom + array_elem + '=' + operacion;
         }
     }
 
@@ -122,10 +133,18 @@ public class CoralToPython extends CoralBaseListener {
             traduccion = traduccion.substring(0, traduccion.length()-1);
             traduccion = traduccion + ']';;
         }
+        if(ctx.NUMERO()==null){
+            String longitud = "s";
+            traduccion = traduccion.substring(0, traduccion.length()-1);
+            traduccion = traduccion + "[]";
+        }
     }
 
     @Override
     public void exitArray(CoralParser.ArrayContext ctx) {
+    }
+    @Override public void enterArrayS(CoralParser.ArraySContext ctx) {
+
     }
 
     @Override public void enterImprimir(CoralParser.ImprimirContext ctx) {
@@ -143,9 +162,13 @@ public class CoralToPython extends CoralBaseListener {
                 //System.out.printf(tipo_var);
                 //System.out.print(ctx.FUNCTION());
             }
+            if(ctx.operacion()!=null){
+                String operacion = ctx.operacion().getText();
+                traduccion = traduccion + operacion + ",end=\"\"" +")";
+                //System.out.printf(tipo_var);
+                //System.out.print(ctx.FUNCTION());
+            }
 
-            //System.out.printf(tipo_var);
-            //System.out.print(ctx.FUNCTION());
         }
     }
 
@@ -185,8 +208,11 @@ public class CoralToPython extends CoralBaseListener {
                 traduccion = traduccion + "for " + i + " in " + "range(" + limite_inf + "," +
                         limite_sup + "," + sentido + avance + ")"+":";
             }
-            //traduccion = traduccion + "for" + " i" + " in " + "range(" + limite_inf + limite_sup + ")";
-            //traduccion = limite_inf + " " + limite_sup;
+            if(ctx.desigualdad_fl().arrayS()!=null){
+                String limite_sup = ctx.desigualdad_fl().arrayS().ID().getText();
+                traduccion = traduccion + "for " + i + " in " + "range(" + limite_inf + "," +
+                        "len("+limite_sup + ")" + "," + sentido + avance + ")"+":";
+            }
         }
     }
 
@@ -205,8 +231,13 @@ public class CoralToPython extends CoralBaseListener {
             if(ctx.CONDICIONAL()!=null ){
                 String condicion= ctx.op_bool().getText();
                 String condicional = ctx.CONDICIONAL().getText();
-                String condicon2 = ctx.decla_bool().getText();
-                traduccion = traduccion + "if " + iden  + condicion + " " + condicional + " " +condicon2+":";
+                String condicion2 = ctx.decla_bool().getText();
+                traduccion = traduccion + "if " + iden  + condicion + " " + condicional + " " +condicion2+":";
+            }
+            if(ctx.op_bool()!=null ){
+                String condicion= ctx.op_bool().getText();
+                //String condicion2 = ctx.decla_bool().getText();
+                traduccion = traduccion + "if " + iden  + condicion + ":";
             }
 
         }
@@ -214,20 +245,6 @@ public class CoralToPython extends CoralBaseListener {
 
     @Override
     public void exitIf_c(CoralParser.If_cContext ctx) {
-        if(ctx.IF()!=null){
-            String iden = ctx.ID().getText();
-            if(ctx.CONDICIONAL()==null && ctx.OPENING_PAR()==null){
-                String condicion= ctx.op_bool().getText();
-                traduccion = traduccion + "if " + iden + condicion + ":";
-            }
-            if(ctx.CONDICIONAL()!=null ){
-                String condicion= ctx.op_bool().getText();
-                String condicional = ctx.CONDICIONAL().getText();
-                String condicon2 = ctx.decla_bool().getText();
-                traduccion = traduccion + "if " + iden  + condicion + " " + condicional + " " +condicon2+":";
-            }
-
-        }
     }
 
     @Override public void enterElse(CoralParser.ElseContext ctx) {
@@ -236,10 +253,67 @@ public class CoralToPython extends CoralBaseListener {
             traduccion = traduccion + "else: ";
         }
     }
-    @Override public void exitElse(CoralParser.ElseContext ctx) { }
+    @Override
+    public void exitElse(CoralParser.ElseContext ctx) { }
+
+    @Override
+    public void enterElseif_c(CoralParser.Elseif_cContext ctx) {
+        if(ctx.ELSEIF()!=null) {
+            String iden = ctx.ID().getText();
+            if (ctx.CONDICIONAL() == null && ctx.OPENING_PAR() == null) {
+                String condicion = ctx.op_bool().getText();
+                traduccion = traduccion + "elseif " + iden + condicion + ":";
+            }
+            if (ctx.CONDICIONAL() != null) {
+                String condicion = ctx.op_bool().getText();
+                String condicional = ctx.CONDICIONAL().getText();
+                String condicon2 = ctx.decla_bool().getText();
+                traduccion = traduccion + "elseif " + iden + condicion + " " + condicional + " " + condicon2 + ":";
+            }
+        }
+    }
+    @Override
+    public void exitElseif_c(CoralParser.Elseif_cContext ctx) {
+    }
+
+    @Override
+    public void enterIndent(CoralParser.IndentContext ctx) {
+        if(ctx.INDENTACION()!=null){
+            traduccion = traduccion.concat("    ");
+            //System.out.printf("HOLA");
+        }
+    }
+    @Override
+    public void exitIndent(CoralParser.IndentContext ctx) { }
+    @Override
+    public void enterIndent2(CoralParser.Indent2Context ctx) {
+        if(ctx.INDENTACION2()!=null){
+            traduccion = traduccion.concat("        ");
+        }
+    }
+    @Override
+    public void enterAssign_size(CoralParser.Assign_sizeContext ctx) {
+        if(ctx.NUMERO()!=null){
+            int longitud = Integer.valueOf(ctx.NUMERO().getText());
+            traduccion = ctx.arrayS().ID().getText() + "=" + "[" ;
+            for(int i =0 ; i<longitud;i++){
+                traduccion = traduccion + "0"+",";
+            }
+            traduccion = traduccion.substring(0, traduccion.length()-1);
+            traduccion = traduccion + ']';;
+        }
+    }
+
+    @Override
+    public void enterEveryRule(ParserRuleContext ctx) {
+        //System.out.print(ctx.getText());
+        //String rule = ;
+        //System.out.print();
+    }
     @Override
     public void exitEveryRule(ParserRuleContext ctx) {
         //System.out.print(traduccion);
+        //System.out.print(ctx.getText());
     }
     @Override
     public void visitTerminal(TerminalNode node) {

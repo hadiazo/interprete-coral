@@ -5,6 +5,7 @@ import org.antlr.v4.tool.Rule;
 
 public class CoralToPython extends CoralBaseListener {
     static String traduccion ="";
+    static String f_return ="";
     @Override
     public void enterTipo(CoralParser.TipoContext ctx) {
     }
@@ -17,35 +18,37 @@ public class CoralToPython extends CoralBaseListener {
      */
     @Override
     public void enterFuncion(CoralParser.FuncionContext ctx) {
-        if(ctx.FUNCTION()!=null){
+        if(ctx.FUNCTION()!=null && ctx.MAIN()==null){
             String nombre_funcion = ctx.ID().getText();
             traduccion = traduccion + "def" +" "+ nombre_funcion + "(";
-            //System.out.printf("def" +" "+ nombre_funcion + "(" + ctx.);
-            // ctx.FUNCTION())==Function  ctx.ID()==nombre de la funcion
-            //System.out.printf(traduccion);
+            //traduccion += "\n";
+            String retorno = ctx.declaracion().ID().getText();
+            f_return= "return(" + retorno + ")";
+        }
+        if(ctx.FUNCTION()!=null && ctx.MAIN()!=null){
+            String nombre_funcion = "Main";
+            traduccion = traduccion + "if __name__== '__main__':";
+            traduccion += "\n";
+            traduccion += "\t";
+        }
+        else{
+            traduccion = traduccion + "):";
+            traduccion += "\n";
         }
 
     }
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
     @Override public void exitFuncion(CoralParser.FuncionContext ctx) { }
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
     @Override public void enterDeclaracion(CoralParser.DeclaracionContext ctx) {
         if(ctx.tipo()!=null){
             String tipo_var = ctx.tipo().getText();
             String variable = ctx.ID().getText();
             if(ctx.array()!=null){
                 traduccion = traduccion + variable + " = [";
+                traduccion += "\n";
             }
             if(ctx.array()==null && (tipo_var == "integer" || tipo_var == "float")){
                 traduccion = traduccion + variable + " = 0";
+                traduccion += "\n";
             }
 
             //System.out.print(ctx.FUNCTION());
@@ -62,6 +65,8 @@ public class CoralToPython extends CoralBaseListener {
             String variable = ctx.ID().getText();
             traduccion += variable;
             traduccion += "):";
+            traduccion += "\n";
+            traduccion += "\t";
             //System.out.printf(tipo_var);
             //System.out.print(ctx.FUNCTION());
         }
@@ -99,6 +104,7 @@ public class CoralToPython extends CoralBaseListener {
             String variable2 = ctx.NUMERO().getText();
             //System.out.printf(variable,"\n");
             traduccion = traduccion + variable + " " + '=' + variable2;
+            traduccion += "\n";
             //System.out.printf(tipo_var);
             //System.out.print(ctx.FUNCTION());
         }
@@ -106,17 +112,32 @@ public class CoralToPython extends CoralBaseListener {
             String variable = ctx.ID().getText();
             String operacion = ctx.operacion().getText();
             traduccion = traduccion + variable + '=' + operacion;
+            traduccion += "\n";
         }
         if(ctx.arrayE()!=null){
             String variable = ctx.ID().getText();
             String arraye = ctx.arrayE().getText();
             traduccion = traduccion + variable + '=' + arraye  ;
+            traduccion += "\n";
         }
         if(ctx.array_elemento()!=null ){
             String array_nom = ctx.ID().getText();
             String array_elem = ctx.array_elemento().getText();
             String operacion = ctx.operacion().getText();
             traduccion = traduccion + array_nom + array_elem + '=' + operacion;
+            traduccion += "\n";
+        }
+        if(ctx.llamada_funcion()!=null ){
+            String variable = ctx.ID().getText();
+            String llamada_f = ctx.llamada_funcion().getText();
+            traduccion = traduccion + variable + '=' + llamada_f;
+            traduccion += "\n";
+        }
+        if(ctx.randomnumber()!=null ){
+            String variable = ctx.ID().getText();
+            String rango = ctx.randomnumber().rango().getText();
+            traduccion = traduccion + variable + "= random.randint" + rango ;
+            traduccion += "\n";
         }
     }
 
@@ -132,11 +153,13 @@ public class CoralToPython extends CoralBaseListener {
             }
             traduccion = traduccion.substring(0, traduccion.length()-1);
             traduccion = traduccion + ']';;
+            traduccion += "\n";
         }
         if(ctx.NUMERO()==null){
             String longitud = "s";
             traduccion = traduccion.substring(0, traduccion.length()-1);
             traduccion = traduccion + "[]";
+            traduccion += "\n";
         }
     }
 
@@ -150,23 +173,71 @@ public class CoralToPython extends CoralBaseListener {
     @Override public void enterImprimir(CoralParser.ImprimirContext ctx) {
         if(ctx.PUT()!=null){
             traduccion = traduccion + "print(";
-            if(ctx.ID()!=null){
+            if(ctx.ID()!=null && ctx.elegir_decimales()==null){
                 String variable = ctx.ID().getText();
                 traduccion = traduccion + variable + ",end=\"\"" +")";
-                //System.out.printf(tipo_var);
-                //System.out.print(ctx.FUNCTION());
+                traduccion += "\n";
             }
             if(ctx.CADENA()!=null){
                 String cadena = ctx.CADENA().getText();
                 traduccion = traduccion + cadena + ",end=\"\"" +")";
-                //System.out.printf(tipo_var);
-                //System.out.print(ctx.FUNCTION());
+                traduccion += "\n";
             }
             if(ctx.operacion()!=null){
                 String operacion = ctx.operacion().getText();
                 traduccion = traduccion + operacion + ",end=\"\"" +")";
-                //System.out.printf(tipo_var);
-                //System.out.print(ctx.FUNCTION());
+                traduccion += "\n";
+            }
+            if(ctx.fun_in()!=null){
+                //String in_fun = ctx.fun_in().getText();
+                if(ctx.fun_in().squareroot()!=null){
+                    String variable = ctx.fun_in().squareroot().ID().getText();
+                    if(ctx.elegir_decimales()==null){
+                        traduccion = traduccion + "pow("+ variable + "," + "0.5)" + ",end=\"\"" +")";
+                        traduccion += "\n";
+                    }
+                    if(ctx.elegir_decimales()!=null){
+                        String decimales_n = ctx.elegir_decimales().NUMERO().getText();
+                        traduccion = traduccion + "round(" + "pow("+ variable + "," + "0.5)"
+                                + "," + decimales_n + ")"
+                                +  ",end=\"\"" +")";
+                        traduccion += "\n";
+                    }
+                }
+                if(ctx.fun_in().absolutevalue()!=null){
+                    String variable = ctx.fun_in().absolutevalue().ID().getText();
+                    if(ctx.elegir_decimales()==null){
+                        traduccion = traduccion + "abs("+ variable +")" + ",end=\"\"" +")";
+                        traduccion += "\n";
+                    }
+                    if(ctx.elegir_decimales()!=null){
+                        String decimales_n = ctx.elegir_decimales().NUMERO().getText();
+                        traduccion = traduccion + "round(" + "abs("+ variable + ")"
+                                + "," + decimales_n + ")"
+                                +  ",end=\"\"" +")";
+                        traduccion += "\n";
+                    }
+                }
+                if(ctx.fun_in().raisetopower()!=null){
+                    String rango = ctx.fun_in().raisetopower().rango().getText();
+                    if(ctx.elegir_decimales()==null){
+                        traduccion = traduccion + "pow"+ rango + ",end=\"\"" +")";
+                        traduccion += "\n";
+                    }
+                    if(ctx.elegir_decimales()!=null){
+                        String decimales_n = ctx.elegir_decimales().NUMERO().getText();
+                        traduccion = traduccion + "round(" + "pow"+ rango +
+                                 "," + decimales_n + ")" +  ",end=\"\"" +")";
+                        traduccion += "\n";
+                    }
+                }
+            }
+
+            if(ctx.elegir_decimales()!=null && ctx.fun_in()==null){
+                String decimales_n = ctx.elegir_decimales().NUMERO().getText();
+                String variable = ctx.ID().getText();
+                traduccion = traduccion + "round(" + variable + "," + decimales_n + ")" + ",end=\"\"" +")";
+                traduccion += "\n";
             }
 
         }
@@ -180,6 +251,7 @@ public class CoralToPython extends CoralBaseListener {
             String desi = ctx.getText();
 
             traduccion = traduccion + desi + ";";
+            traduccion += "\n";
 
         }
     }
@@ -197,21 +269,29 @@ public class CoralToPython extends CoralBaseListener {
                 int limite_sup = Integer.valueOf(ctx.desigualdad_fl().NUMERO().getText());
                 traduccion = traduccion + "for " + i + " in " + "range(" + limite_inf + "," +
                          limite_sup + "," + sentido + avance + ")"+":";
+                traduccion += "\n";
+                traduccion += "\t";
             }
             if(ctx.desigualdad_fl().operacion_fl()!=null ){
                 String limite_sup = ctx.desigualdad_fl().operacion_fl().getText();
                 traduccion = traduccion + "for " + i + " in " + "range(" + limite_inf + "," +
                         limite_sup + "," + sentido + avance + ")"+":";
+                traduccion += "\n";
+                traduccion += "\t";
             }
             if(ctx.desigualdad_fl().op_bool()!=null ){
                 String limite_sup = ctx.desigualdad_fl().op_bool().ID().getText();
                 traduccion = traduccion + "for " + i + " in " + "range(" + limite_inf + "," +
                         limite_sup + "," + sentido + avance + ")"+":";
+                traduccion += "\n";
+                traduccion += "\t";
             }
             if(ctx.desigualdad_fl().arrayS()!=null){
                 String limite_sup = ctx.desigualdad_fl().arrayS().ID().getText();
                 traduccion = traduccion + "for " + i + " in " + "range(" + limite_inf + "," +
                         "len("+limite_sup + ")" + "," + sentido + avance + ")"+":";
+                traduccion += "\n";
+                traduccion += "\t";
             }
         }
     }
@@ -227,17 +307,23 @@ public class CoralToPython extends CoralBaseListener {
             if(ctx.CONDICIONAL()==null && ctx.OPENING_PAR()==null){
                 String condicion= ctx.op_bool().getText();
                 traduccion = traduccion + "if " + iden + condicion + ":";
+                traduccion += "\n";
+                traduccion += "\t";
             }
             if(ctx.CONDICIONAL()!=null ){
                 String condicion= ctx.op_bool().getText();
                 String condicional = ctx.CONDICIONAL().getText();
                 String condicion2 = ctx.decla_bool().getText();
                 traduccion = traduccion + "if " + iden  + condicion + " " + condicional + " " +condicion2+":";
+                traduccion += "\n";
+                traduccion += "\t";
             }
-            if(ctx.op_bool()!=null ){
+            if(ctx.op_bool()!=null && ctx.CONDICIONAL()==null ){
                 String condicion= ctx.op_bool().getText();
                 //String condicion2 = ctx.decla_bool().getText();
                 traduccion = traduccion + "if " + iden  + condicion + ":";
+                traduccion += "\n";
+                traduccion += "\t";
             }
 
         }
@@ -251,6 +337,8 @@ public class CoralToPython extends CoralBaseListener {
         if(ctx.ELSE()!=null){
             String els = ctx.ELSE().getText();
             traduccion = traduccion + "else: ";
+            traduccion += "\n";
+            traduccion += "\t";
         }
     }
     @Override
@@ -263,12 +351,16 @@ public class CoralToPython extends CoralBaseListener {
             if (ctx.CONDICIONAL() == null && ctx.OPENING_PAR() == null) {
                 String condicion = ctx.op_bool().getText();
                 traduccion = traduccion + "elseif " + iden + condicion + ":";
+                traduccion += "\n";
+                traduccion += "\t";
             }
             if (ctx.CONDICIONAL() != null) {
                 String condicion = ctx.op_bool().getText();
                 String condicional = ctx.CONDICIONAL().getText();
                 String condicon2 = ctx.decla_bool().getText();
                 traduccion = traduccion + "elseif " + iden + condicion + " " + condicional + " " + condicon2 + ":";
+                traduccion += "\n";
+                traduccion += "\t";
             }
         }
     }
@@ -280,6 +372,7 @@ public class CoralToPython extends CoralBaseListener {
     public void enterIndent(CoralParser.IndentContext ctx) {
         if(ctx.INDENTACION()!=null){
             traduccion = traduccion.concat("    ");
+
             //System.out.printf("HOLA");
         }
     }
@@ -288,6 +381,11 @@ public class CoralToPython extends CoralBaseListener {
     @Override
     public void enterIndent2(CoralParser.Indent2Context ctx) {
         if(ctx.INDENTACION2()!=null){
+            traduccion = traduccion.concat("        ");
+        }
+    }
+    public void enterIndent3(CoralParser.Indent3Context ctx) {
+        if(ctx.INDENTACION3()!=null){
             traduccion = traduccion.concat("        ");
         }
     }
@@ -300,10 +398,46 @@ public class CoralToPython extends CoralBaseListener {
                 traduccion = traduccion + "0"+",";
             }
             traduccion = traduccion.substring(0, traduccion.length()-1);
-            traduccion = traduccion + ']';;
+            traduccion = traduccion + ']';
+            traduccion += "\n";
+        }
+        if(ctx.ID()!=null){
+            String longitud = ctx.ID().getText();
+            traduccion = ctx.arrayS().ID().getText() + "=" + "[" ;
+            traduccion = traduccion + ']';
+            traduccion += "\n";
+        }
+    }
+    /*@Override public void enterIndentaciones(CoralParser.IndentacionesContext ctx) {
+        if(ctx.indent()!=null && ctx.indent2()==null && ctx.indent3()==null){
+            traduccion = traduccion.concat("    ");
+        }
+        if(ctx.indent()!=null && ctx.indent2()!=null && ctx.indent3()==null){
+            traduccion = traduccion.concat("        ");
+        }
+        if(ctx.indent()!=null && ctx.indent2()==null && ctx.indent3()!=null){
+            traduccion = traduccion.concat("            ");
+        }
+        //traduccion = traduccion.concat("    ");
+    }*/
+
+    @Override public void enterRandomnumber(CoralParser.RandomnumberContext ctx) {
+        if(ctx.RANDOMNUMBER()!=null){
+
         }
     }
 
+    @Override public void enterWhile(CoralParser.WhileContext ctx) {
+        if(ctx.WHILE()!=null){
+            String condicion= ctx.desigualdadW().getText();
+            traduccion=traduccion + "while " + condicion + ":" ;
+            traduccion+="\n";
+            traduccion += "\t";
+        }
+    }
+    @Override public void enterSquareroot(CoralParser.SquarerootContext ctx) {
+
+    }
     @Override
     public void enterEveryRule(ParserRuleContext ctx) {
         //System.out.print(ctx.getText());

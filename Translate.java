@@ -29,7 +29,9 @@ public class Translate {
         CoralToPython coralT = new CoralToPython();
         // Walk the tree created during the parse, trigger callbacks
         walker.walk(new CoralToPython(), tree);   //(Vaya y recorra el arbol)
+
         System.out.println("Traducción a Python"); // print a \n after translation
+        //System.out.println("ENTRADA:  "+code_input);
         System.out.printf(CoralToPython.traduccion);
         /*try{
             // create a CharStream that reads from standard input / file
